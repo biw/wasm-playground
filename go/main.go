@@ -5,14 +5,20 @@ import (
 	"syscall/js"
 )
 
-var done = make(chan struct{})
-
 func main() {
-	callback := js.NewCallback(higherOrderCallback)
-	defer callback.Release()
-	setPrintMessage := js.Global().Get("setPrintMessage")
-	setPrintMessage.Invoke(callback)
-	<-done
+
+	defer registerCallback(goPrint).Release()
+	defer registerCallback(higherOrderCallback).Release()
+
+	// callback for when wasm is loaded
+	wasmCB := callWASMLoad()
+	defer wasmCB.Release()
+
+	// cleanup for when the page unloads
+	cleanupCb, cleanupCh := cleanup()
+	defer cleanupCb.Release()
+	<-cleanupCh
+	fmt.Println("go-wasm exit 0")
 }
 
 func higherOrderCallback(args []js.Value) {
@@ -23,15 +29,14 @@ func higherOrderCallback(args []js.Value) {
 	setRender.Invoke(renderText)
 }
 
-func printMessage(args []js.Value) {
+func goPrint(args []js.Value) {
 	message := args[0].String()
 	fmt.Println(message)
-	done <- struct{}{}
 }
 
 func render(nice bool) string {
 	if nice == true {
-		return "dis is nice"
+		return "hello"
 	}
-	return "dis is mean"
+	return "bye"
 }

@@ -3,8 +3,9 @@
 import http.server
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
+import sys
 
-PORT = 8001
+PORT = int(sys.argv[1])
 
 Handler = http.server.SimpleHTTPRequestHandler
 
